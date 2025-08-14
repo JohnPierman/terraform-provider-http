@@ -45,11 +45,12 @@ func TestHTTPRequestResource(t *testing.T) {
 		// given
 		var state bytes.Buffer
 		_ = json.Compact(&state, []byte(`{
-		"method": "GET",
-		"path": "/posts/1",
-		"response_code": 200,
-		"response_body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"sunt aut facere repellat provident occaecati excepturi optio reprehenderit\",\n  \"body\": \"quia et suscipit\\nsuscipit recusandae consequuntur expedita et cum\\nreprehenderit molestiae ut ut quas totam\\nnostrum rerum est autem sunt rem eveniet architecto\"\n}"
-	}`))
+               "method": "GET",
+               "path": "/posts/1",
+               "query_parameters": {},
+               "response_code": 200,
+               "response_body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"sunt aut facere repellat provident occaecati excepturi optio reprehenderit\",\n  \"body\": \"quia et suscipit\\nsuscipit recusandae consequuntur expedita et cum\\nreprehenderit molestiae ut ut quas totam\\nnostrum rerum est autem sunt rem eveniet architecto\"\n}"
+       }`))
 		stateID := "anything unique"
 		modelEncoded := base64.StdEncoding.EncodeToString(state.Bytes())
 		importPayload := fmt.Sprintf("%s/%s", stateID, modelEncoded)
@@ -111,11 +112,12 @@ func TestHTTPRequestResource(t *testing.T) {
 		// given
 		var state bytes.Buffer
 		_ = json.Compact(&state, []byte(`{
-        "method": "GET",
-        "path": "/posts/0",
-        "response_code": 404,
-        "response_body": "{}"
-    }`))
+       "method": "GET",
+       "path": "/posts/0",
+       "query_parameters": {},
+       "response_code": 404,
+       "response_body": "{}"
+   }`))
 		stateID := "anything unique"
 		modelEncoded := base64.StdEncoding.EncodeToString(state.Bytes())
 		importPayload := fmt.Sprintf("%s/%s", stateID, modelEncoded)
@@ -170,12 +172,13 @@ func TestHTTPRequestResource(t *testing.T) {
 		// given
 		var state bytes.Buffer
 		_ = json.Compact(&state, []byte(`{
-		"method": "POST",
-		"path": "/posts",
-		"request_body": "test body",
-		"response_code": 201,
-		"response_body":"{\n  \"id\": 101\n}"
-	}`))
+               "method": "POST",
+               "path": "/posts",
+               "query_parameters": {},
+               "request_body": "test body",
+               "response_code": 201,
+               "response_body":"{\n  \"id\": 101\n}"
+       }`))
 		stateID := "anything unique"
 		modelEncoded := base64.StdEncoding.EncodeToString(state.Bytes())
 		importPayload := fmt.Sprintf("%s/%s", stateID, modelEncoded)
@@ -239,16 +242,17 @@ func TestHTTPRequestResource(t *testing.T) {
 		// given
 		var state bytes.Buffer
 		_ = json.Compact(&state, []byte(`{
-		"method": "POST",
-		"path": "/posts",
-		"request_body": "{ \"test\": \"test body\" }",
- 		"is_response_body_json": true,
-		"response_body_id_filter": "$.id",
-		"response_code": 201,
-		"response_body": "{\"id\":101}",
-		"response_body_id": "101",
-		"response_body_json": {"id":"101"}
-	}`))
+               "method": "POST",
+               "path": "/posts",
+               "query_parameters": {},
+               "request_body": "{ \"test\": \"test body\" }",
+               "is_response_body_json": true,
+               "response_body_id_filter": "$.id",
+               "response_code": 201,
+               "response_body": "{\"id\":101}",
+               "response_body_id": "101",
+               "response_body_json": {"id":"101"}
+       }`))
 		stateID := "anything unique"
 		modelEncoded := base64.StdEncoding.EncodeToString(state.Bytes())
 		importPayload := fmt.Sprintf("%s/%s", stateID, modelEncoded)

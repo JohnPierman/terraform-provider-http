@@ -90,6 +90,7 @@ resource "http_request_nonfatal" "canary" {
 ### Optional
 
 - `headers` (Map of String) A map of HTTP headers to include in the request. Each key-value pair represents a header name and its corresponding value.
+- `query_parameters` (Map of String) Optional query parameters to append to the request path.
 - `is_response_body_json` (Boolean) A boolean flag indicating whether the response body is expected to be in JSON format.
 - `request_body` (String) The body content to be sent with the HTTP request. This is typically used for POST and PUT requests.
 - `response_body_id_filter` (String) A JSONPath filter used to extract a specific ID from the JSON response body. This is useful for identifying unique elements within the response.

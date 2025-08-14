@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	gopath "path"
 	"strings"
 
 	"github.com/google/uuid"
@@ -41,6 +42,7 @@ type HTTPRequestNonFatalResourceModel struct {
 	Method               types.String `tfsdk:"method"`
 	Path                 types.String `tfsdk:"path"`
 	Headers              types.Map    `tfsdk:"headers"`
+	QueryParameters      types.Map    `tfsdk:"query_parameters"`
 	RequestBody          types.String `tfsdk:"request_body"`
 	IsResponseBodyJSON   types.Bool   `tfsdk:"is_response_body_json"`
 	ResponseBodyIDFilter types.String `tfsdk:"response_body_id_filter"`
@@ -59,6 +61,7 @@ type HTTPRequestNonFatalResourceModelNative struct {
 	Method               string            `json:"method"`
 	Path                 string            `json:"path"`
 	Headers              map[string]string `json:"headers,omitempty"`
+	QueryParameters      map[string]string `json:"query_parameters,omitempty"`
 	RequestBody          string            `json:"request_body,omitempty"`
 	IsResponseBodyJSON   bool              `json:"is_response_body_json,omitempty"`
 	ResponseBodyIDFilter string            `json:"response_body_id_filter,omitempty"`
@@ -89,6 +92,8 @@ func GetHTTPRequestNonFatalResourceSchema() schema.Schema {
 			"headers": helpers.MapAttribute(false, types.StringType,
 				"A map of HTTP headers to include in the request. Each key-value pair represents a "+
 					"header name and its corresponding value."),
+			"query_parameters": helpers.MapAttribute(false, types.StringType,
+				"Optional query parameters to append to the request path"),
 			"request_body": helpers.StringAttribute(false,
 				"The body content to be sent with the HTTP request. This is typically used for POST and PUT requests."),
 			"is_response_body_json": helpers.BoolAttribute(false,
@@ -186,10 +191,9 @@ func (it *HTTPRequestNonFatalResource) Create(ctx context.Context, req resource.
 		return
 	}
 
-	// Build full URL
-	endpoint, err := url.JoinPath(it.internal.Config.URL, model.Path.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error joining the URL path...", err.Error())
+	endpoint, diags := it.buildFullURL(ctx, model)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -463,6 +467,12 @@ func decodeNonFatalImportPayloadToModel(importPayload string, diagnostics *diag.
 		return nil
 	}
 	model.Headers = headers
+	queryParameters, diags := types.MapValueFrom(context.Background(), types.StringType, nativeModel.QueryParameters)
+	if diags.HasError() {
+		diagnostics.Append(diags...)
+		return nil
+	}
+	model.QueryParameters = queryParameters
 	responseBodyJSON, diags := types.MapValueFrom(context.Background(), types.StringType, nativeModel.ResponseBodyJSON)
 	if diags.HasError() {
 		diagnostics.Append(diags...)
@@ -471,4 +481,48 @@ func decodeNonFatalImportPayloadToModel(importPayload string, diagnostics *diag.
 	model.ResponseBodyJSON = responseBodyJSON
 
 	return model
+}
+
+func (it *HTTPRequestNonFatalResource) buildFullURL(
+	ctx context.Context,
+	model HTTPRequestNonFatalResourceModel,
+) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	baseURL, err := url.Parse(it.internal.Config.URL)
+	if err != nil {
+		diags.AddError("Error parsing base URL", err.Error())
+		return "", diags
+	}
+
+	relativePath := model.Path.ValueString()
+	if !strings.HasPrefix(relativePath, "/") {
+		relativePath = "/" + relativePath
+	}
+	userURL, err := url.Parse(relativePath)
+	if err != nil {
+		diags.AddError("Error parsing user URL", err.Error())
+		return "", diags
+	}
+
+	baseURL.Path = gopath.Join(baseURL.Path, userURL.Path)
+
+	query := userURL.Query()
+	var queryParams map[string]string
+	if !model.QueryParameters.IsNull() && model.QueryParameters.Elements() != nil {
+		d := model.QueryParameters.ElementsAs(ctx, &queryParams, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return "", diags
+		}
+		for k, v := range queryParams {
+			query.Add(k, v)
+		}
+	}
+	baseURL.RawQuery = query.Encode()
+
+	baseURL.Fragment = userURL.Fragment
+
+	finalURL := baseURL.String()
+	return finalURL, diags
 }
